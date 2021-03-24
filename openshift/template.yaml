@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: load-test-template
+  namespace: ${NAMESPACE}
+objects:
+
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: load-configmap
+    namespace: ${NAMESPACE}
+  data:
+    socket_address: ${SOCKET_ADDRESS}
+    users: ${USERS}
+    guesses: ${GUESSES}
+    percent_bad_guesses: ${PERCENT_BAD_GUESSES}
+    simulation: '${SIMULATION}'
+    WS_PROTOCOL: '${WS_PROTOCOL}'
+- kind: Job
+  apiVersion: batch/v1
+  metadata:
+    name: load-test
+    namespace: ${NAMESPACE}
+  spec:
+    parallelism: ${{REPLICAS}}
+    completions: ${{REPLICAS}}
+    template:
+      metadata:
+        name: load-test
+      spec:
+        containers:
+          - name: load-test
+            image: ${IMAGE}
+            env:
+              - name: USERS
+                valueFrom:
+                  configMapKeyRef:
+                    name: load-configmap
+                    key: users
+              - name: SOCKET_ADDRESS
+                valueFrom:
+                  configMapKeyRef:
+                    name: load-configmap
+                    key: socket_address
+              - name: GUESSES
+                valueFrom:
+                  configMapKeyRef:
+                    name: load-configmap
+                    key: guesses
+              - name: PERCENT_BAD_GUESSES
+                valueFrom:
+                  configMapKeyRef:
+                    name: load-configmap
+                    key: percent_bad_guesses
+              - name: SIMULATION
+                valueFrom:
+                  configMapKeyRef:
+                    name: load-configmap
+                    key: simulation
+              - name: WS_PROTOCOL
+                valueFrom:
+                  configMapKeyRef:
+                    name: load-configmap
+                    key: ws_protocol
+            imagePullPolicy: Always
+        restartPolicy: OnFailure
+parameters:
+- description: namespace to run the load test
+  displayName: NAMESPACE
+  name: NAMESPACE
+  required: true
+- description: address to connect to socket
+  displayName: SOCKET_ADDRESS
+  name: SOCKET_ADDRESS
+  required: true
+- description: number of users per replica
+  displayName: USERS
+  name: USERS
+  required: true
+- description: number of guesses per users
+  displayName: GUESSES
+  name: GUESSES
+  required: true
+- description: percentage of bad guesses per users
+  displayName: PERCENT_BAD_GUESSES
+  name: PERCENT_BAD_GUESSES
+  required: true
+- description: number of replicas of gatling pods
+  displayName: REPLICAS
+  name: REPLICAS
+  required: true
+- description: Image of Gatling Pod
+  displayName: IMAGE
+  name: IMAGE
+  required: true
+- description: SIMULATION
+  displayName: SIMULATION
+  name: SIMULATION
+  required: true  
+- description: WS_PROTOCOL
+  displayName: WS_PROTOCOL
+  name: WS_PROTOCOL
+  required: true
+
