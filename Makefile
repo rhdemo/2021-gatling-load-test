@@ -3,7 +3,7 @@ include ${ENV_FILE}
 export $(shell sed 's/=.*//' ${ENV_FILE})
 
 oc_login: 
-	oc login ${OC_URL} -u ${OC_USER} -p ${OC_PASSWORD} --insecure-skip-tls-verify=true
+	oc login --token=${OC_TOKEN} --server=${OC_SERVER} --insecure-skip-tls-verify=true
 
 build-image:
 	sh build.sh
