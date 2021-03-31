@@ -94,10 +94,9 @@ class BattleSchool extends Simulation {
             .set("y_axis", y_axis)
         })
           .exec(ws("Attack")
-            .sendText("""{"type":"attack","data":{"type":"1x1","origin":["${x_axis}","${y_axis}"],"orientation":"horizontal"}}""").await(5.seconds)(checkAttack)
+            .sendText("""{"type":"attack","data":{"type":"1x1","origin":["${x_axis}","${y_axis}"],"orientation":"horizontal"}}""").await(30.seconds)(checkAttack)
           )
           .pause(5)
-          print(session("attack-result"))
       }
   }
 }

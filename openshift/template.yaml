@@ -13,10 +13,9 @@ objects:
   data:
     socket_address: ${SOCKET_ADDRESS}
     users: ${USERS}
-    guesses: ${GUESSES}
-    percent_bad_guesses: ${PERCENT_BAD_GUESSES}
+    attacks: ${ATTACKS}
     simulation: '${SIMULATION}'
-    WS_PROTOCOL: '${WS_PROTOCOL}'
+    ws_protocol: '${WS_PROTOCOL}'
 - kind: Job
   apiVersion: batch/v1
   metadata:
@@ -43,16 +42,11 @@ objects:
                   configMapKeyRef:
                     name: load-configmap
                     key: socket_address
-              - name: GUESSES
+              - name: ATTACKS
                 valueFrom:
                   configMapKeyRef:
                     name: load-configmap
-                    key: guesses
-              - name: PERCENT_BAD_GUESSES
-                valueFrom:
-                  configMapKeyRef:
-                    name: load-configmap
-                    key: percent_bad_guesses
+                    key: attacks
               - name: SIMULATION
                 valueFrom:
                   configMapKeyRef:
@@ -78,13 +72,9 @@ parameters:
   displayName: USERS
   name: USERS
   required: true
-- description: number of guesses per users
-  displayName: GUESSES
-  name: GUESSES
-  required: true
-- description: percentage of bad guesses per users
-  displayName: PERCENT_BAD_GUESSES
-  name: PERCENT_BAD_GUESSES
+- description: percentage of attacks
+  displayName: ATTACKS
+  name: ATTACKS
   required: true
 - description: number of replicas of gatling pods
   displayName: REPLICAS
