@@ -14,7 +14,6 @@ class BattleSchool extends Simulation {
 
   val host: String = sys.env("SOCKET_ADDRESS")
   val numUsers: Int = sys.env("USERS").toInt
-  val numAttacks: Int = sys.env("ATTACKS").toInt
   val wsProtocol: String = sys.env("WS_PROTOCOL")
 
   val protocol: HttpProtocolBuilder = http
@@ -50,6 +49,8 @@ class BattleSchool extends Simulation {
       .check(
         jsonPath("$.data.player.username").saveAs("username"),
         jsonPath("$.data.game.uuid").saveAs("gameId"),
+        jsonPath("$.data.game.state").saveAs("gameState"),
+        jsonPath("$.data.match.state.phase").saveAs("matchPhase"),
         jsonPath("$.data.player.uuid").saveAs("playerId"),
       )
     val connect: ChainBuilder =
@@ -68,8 +69,9 @@ class BattleSchool extends Simulation {
 
 
     val ships: ChainBuilder =
-        exec(ws("Send Ships Positions").sendText("""{"type": "ship-positions","data": {"Carrier": { "origin": [3, 0], "orientation": "vertical"}, "Battleship": { "origin": [0, 1], "orientation": "vertical" }, "Submarine": { "origin": [1, 1], "orientation": "vertical"}, "Destroyer": { "origin": [1, 4], "orientation": "horizontal"}}}"""))
-
+        exec(ws("Send Ships Positions")
+              .sendText("""{"type": "ship-positions","data": {"Carrier": { "origin": [3, 0], "orientation": "vertical"}, "Battleship": { "origin": [0, 1], "orientation": "vertical" }, "Submarine": { "origin": [1, 1], "orientation": "vertical"}, "Destroyer": { "origin": [1, 4], "orientation": "horizontal"}}}""")
+              .await(5 seconds)(checkConfiguration))
   }
 
 
@@ -77,26 +79,38 @@ class BattleSchool extends Simulation {
 
     val checkAttack = ws.checkTextMessage("CheckAttack")
       .matching(
-        jsonPath("$.data.match.activePlayer").is("${playerId}")
+        jsonPath("$.data.match.state.activePlayer").is("${playerId}")
       )
       .check(jsonPath("$").saveAs("attack-result"))
-
+      .check(jsonPath("$.data.match.state.phase").saveAs("matchPhase"))
+      exitHereIfFailed
 
     val attack: ChainBuilder =
-      repeat(numAttacks, "index") {
+    asLongAs(session => (session("matchPhase").as[String]) != "finished", "index") {
+      val numPairs = List((0, 0), (0, 1), (0, 2), (0,3), (0,4), (1, 0), (1, 1), (1, 2), (1,3), (1,4), (2, 0), (2, 1), (2, 2), (2,3), (2,4), (3, 0), (3, 1), (3, 2), (3,3), (3,4), (4, 0), (4, 1), (4, 2), (4,3), (4,4))
+
+      doIfOrElse(session => session("matchPhase").as[String] != "bonus") {
         exec(session => {
-          val index = session("index").as[Int]
-          val numPairs = List((0, 0), (0, 1), (0, 2), (0,3), (0,4), (1, 0), (1, 1), (1, 2), (1,3), (1,4), (2, 0), (2, 1), (2, 2), (2,3), (2,4), (3, 0), (3, 1), (3, 2), (3,3), (3,4), (4, 0), (4, 1), (4, 2), (4,3), (4,4))
-          val x_axis = numPairs(index)._1
-          val y_axis = numPairs(index)._2
-          session
-            .set("x_axis", x_axis)
-            .set("y_axis", y_axis)
-        })
-          .exec(ws("Attack")
-            .sendText("""{"type":"attack","data":{"type":"1x1","origin":["${x_axis}","${y_axis}"],"orientation":"horizontal"}}""").await(30.seconds)(checkAttack)
-          )
-          .pause(5)
+        val index = session("index").as[Int]
+        val x_axis = numPairs(index)._1
+        val y_axis = numPairs(index)._2
+        println(session("matchPhase").as[String])
+        session
+          .set("x_axis", x_axis)
+          .set("y_axis", y_axis)
+      })
+        .exec(ws("Attack")
+          .sendText("""{"type":"attack","data":{"type":"1x1","origin":[${x_axis},${y_axis}],"orientation":"horizontal"}}""").await(5.seconds)(checkAttack)
+        ).exitHereIfFailed
       }
+      {
+        exec(session => {
+          println(session("matchPhase").as[String])
+          session
+        })
+        exec(ws("Bonus Round")
+          .sendText("""{"type":"bonus","data":{"hits":1}}""").await(5.seconds)(checkAttack)).exitHereIfFailed
+      }
+    }
   }
 }

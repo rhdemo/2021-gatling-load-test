@@ -1,6 +1,0 @@
-{
-  "type": "guess",
-  "itemId": 0,
-  "playerId": "${playerId}",
-  "gameId": "${gameId}"
-}

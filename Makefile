@@ -20,7 +20,7 @@ create-namespace:
 	oc new-project ${NAMESPACE}
 
 run-locally:
-	docker run --rm=true  -e ATTACKS=${ATTACKS} -e SOCKET_ADDRESS=${SOCKET_ADDRESS} -e USERS=${USERS}  -e SIMULATION=${SIMULATION} -e WS_PROTOCOL=${WS_PROTOCOL} ${IMAGE}
+	docker run --rm=true -e SOCKET_ADDRESS=${SOCKET_ADDRESS} -e USERS=${USERS}  -e SIMULATION=${SIMULATION} -e WS_PROTOCOL=${WS_PROTOCOL} ${IMAGE}
 
 deploy-load-test:  
 	oc project ${NAMESPACE}
