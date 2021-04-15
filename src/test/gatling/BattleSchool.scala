@@ -31,13 +31,13 @@ class BattleSchool extends Simulation {
     .exec(Connection.connect)
     .pause(1)
     .exec(Connection.ships)
-    .pause(1)
+    .pause(5)
     .exec(Attack.attack)
     .pause(1)
     .exec(ws("Close").close)
 
   setUp(
-    scn.inject(rampUsers(numUsers) during (5 seconds)).protocols(protocol)
+    scn.inject(rampUsers(numUsers) during (60 seconds)).protocols(protocol)
   )
 
 
@@ -50,6 +50,8 @@ class BattleSchool extends Simulation {
         jsonPath("$.data.player.username").saveAs("username"),
         jsonPath("$.data.game.uuid").saveAs("gameId"),
         jsonPath("$.data.game.state").saveAs("gameState"),
+        jsonPath("$.data").saveAs("data"),
+        jsonPath("$.data.match.state.activePlayer").saveAs("activePlayer"),
         jsonPath("$.data.match.state.phase").saveAs("matchPhase"),
         jsonPath("$.data.player.uuid").saveAs("playerId"),
       )
@@ -71,7 +73,7 @@ class BattleSchool extends Simulation {
     val ships: ChainBuilder =
         exec(ws("Send Ships Positions")
               .sendText("""{"type": "ship-positions","data": {"Carrier": { "origin": [3, 0], "orientation": "vertical"}, "Battleship": { "origin": [0, 1], "orientation": "vertical" }, "Submarine": { "origin": [1, 1], "orientation": "vertical"}, "Destroyer": { "origin": [1, 4], "orientation": "horizontal"}}}""")
-              .await(5 seconds)(checkConfiguration))
+              .await(5 seconds)(checkConfiguration)).pause(4)
   }
 
 
@@ -79,11 +81,19 @@ class BattleSchool extends Simulation {
 
     val checkAttack = ws.checkTextMessage("CheckAttack")
       .matching(
+        jsonPath("$.data.game.state").is("${gameState}"),
+        // jsonPath("$.data.match.state.phase").isNot("finished"),
         jsonPath("$.data.match.state.activePlayer").is("${playerId}")
+
+
       )
-      .check(jsonPath("$").saveAs("attack-result"))
-      .check(jsonPath("$.data.match.state.phase").saveAs("matchPhase"))
-      exitHereIfFailed
+      .check(
+        jsonPath("$.data.match.state.phase").saveAs("matchPhase"),
+        jsonPath("$.data.match.state.activePlayer").saveAs("activePlayer"),
+        )
+
+
+  
 
     val attack: ChainBuilder =
     asLongAs(session => (session("matchPhase").as[String]) != "finished", "index") {
@@ -94,22 +104,22 @@ class BattleSchool extends Simulation {
         val index = session("index").as[Int]
         val x_axis = numPairs(index)._1
         val y_axis = numPairs(index)._2
-        println(session("matchPhase").as[String])
+        println("Game State: " + session("gameState").as[String] + "  Match Phase:" +  session("matchPhase").as[String] + " PlayerId: " + session("playerId").as[String] + " Active Player: " + session("activePlayer").as[String] )
         session
           .set("x_axis", x_axis)
           .set("y_axis", y_axis)
-      })
+      }).pause(3)
         .exec(ws("Attack")
-          .sendText("""{"type":"attack","data":{"type":"1x1","origin":[${x_axis},${y_axis}],"orientation":"horizontal"}}""").await(5.seconds)(checkAttack)
+          .sendText("""{"type":"attack","data":{"type":"1x1","origin":[${x_axis},${y_axis}],"orientation":"horizontal"}}""").await(30.seconds)(checkAttack)
         ).exitHereIfFailed
       }
       {
         exec(session => {
-          println(session("matchPhase").as[String])
+          println("Game State: " + session("gameState").as[String] + "  Match Phase:" +  session("matchPhase").as[String] + " PlayerId: " + session("playerId").as[String] + " Active Player: " + session("activePlayer").as[String] )
           session
         })
         exec(ws("Bonus Round")
-          .sendText("""{"type":"bonus","data":{"hits":1}}""").await(5.seconds)(checkAttack)).exitHereIfFailed
+          .sendText("""{"type":"bonus","data":{"hits":1}}""").await(30.seconds)(checkAttack)).exitHereIfFailed
       }
     }
   }

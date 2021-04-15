@@ -24,12 +24,12 @@ run-locally:
 
 deploy-load-test:  
 	oc project ${NAMESPACE}
-	oc process -f openshift/template.yaml -p $ USERS=${USERS} NAMESPACE=${NAMESPACE} ATTACKS=${ATTACKS}  IMAGE=${IMAGE} REPLICAS=${REPLICAS} SOCKET_ADDRESS=${SOCKET_ADDRESS} SIMULATION=${SIMULATION} WS_PROTOCOL=${WS_PROTOCOL} | oc apply -f -
+	oc process -f openshift/template.yaml -p $ USERS=${USERS} NAMESPACE=${NAMESPACE}  IMAGE=${IMAGE} REPLICAS=${REPLICAS} SOCKET_ADDRESS=${SOCKET_ADDRESS} SIMULATION=${SIMULATION} WS_PROTOCOL=${WS_PROTOCOL} | oc apply -f -
 
 
 remove-load-test:
 	oc project ${NAMESPACE}
-	oc process -f openshift/template.yaml -p $ USERS=${USERS} NAMESPACE=${NAMESPACE} ATTACKS=${ATTACKS}  IMAGE=${IMAGE} REPLICAS=${REPLICAS} SOCKET_ADDRESS=${SOCKET_ADDRESS} SIMULATION=${SIMULATION} WS_PROTOCOL=${WS_PROTOCOL} | oc delete -f -
+	oc process -f openshift/template.yaml -p $ USERS=${USERS} NAMESPACE=${NAMESPACE}  IMAGE=${IMAGE} REPLICAS=${REPLICAS} SOCKET_ADDRESS=${SOCKET_ADDRESS} SIMULATION=${SIMULATION} WS_PROTOCOL=${WS_PROTOCOL} | oc delete -f -
 
 report:
 	oc project ${NAMESPACE}
